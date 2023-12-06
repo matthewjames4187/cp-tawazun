@@ -33,7 +33,7 @@ jobs:
 
     - name: Create EC2 Instance
       run: |
-        instance_id=$(aws ec2 run-instances --image-id ami-0e83be366243f524a --instance-type t2.micro --key-name cpdevopsew-us-east-2.pem --query 'Instances[0].InstanceId' --output text)
+        instance_id=$(aws ec2 run-instances --image-id ami-0e83be366243f524a --instance-type t2.micro --key-name cpdevopsew-us-east-2 --query 'Instances[0].InstanceId' --output text)
         echo "Instance ID: $instance_id"
         aws ec2 wait instance-running --instance-ids $instance_id
         instance_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
