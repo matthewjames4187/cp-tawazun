@@ -23,15 +23,21 @@ jobs:
 
     - name: Build with Maven
       run: mvn clean install
-      
+
+  create_instance:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
     - name: Set up AWS CLI
       uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-2  # Update with your desired region
+        aws-region: us-east-2
 
     - name: Create EC2 Instance
+      id: create_instance
       run: |
         instance_id=$(aws ec2 run-instances --image-id ami-0e83be366243f524a --instance-type t2.micro --key-name cpdevopsew-us-east-2 --query 'Instances[0].InstanceId' --output text)
         echo "Instance ID: $instance_id"
@@ -40,6 +46,11 @@ jobs:
         echo "Instance IP: $instance_ip"
         echo "::set-output name=instance_ip::$instance_ip"
 
+  ssh_into_instance:
+    needs: create_instance
+    runs-on: ubuntu-latest
+
+    steps:
     - name: Create PEM file
       run: echo -e "${{ secrets.AWS_PEM_KEY_AS_PEM }}" > cpdevopsew-us-east-2.pem
 
@@ -54,4 +65,3 @@ jobs:
         mvn clean install
         mvn spring-boot:run
         EOF
-
