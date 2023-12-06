@@ -42,7 +42,7 @@ jobs:
 
     - name: SSH into EC2 Instance and Run Commands
       run: |
-        ssh -o StrictHostKeyChecking=no -i YourKeyPair.pem ubuntu@${{ needs.create_instance.outputs.instance_ip }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no -i cpdevopsew-us-east-2.pem ubuntu@${{ needs.create_instance.outputs.instance_ip }} << 'EOF'
         sudo apt update -y
         sudo apt install -y git
         git clone https://github.com/chandradeoarya/devops-cicd-gaction-java-spring.git
