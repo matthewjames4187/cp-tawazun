@@ -56,7 +56,7 @@ jobs:
     steps:
     - name: Use Instance IP
       run: |
-        echo "Instance IP: ${{ needs.create_instance_outputs.values.instance_ip }}"
+        echo "Instance IP: ${{ needs.create_instance_outputs.instance_ip }}"
 
   ssh_into_instance:
     needs: create_instance
