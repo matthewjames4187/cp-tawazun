@@ -1,0 +1,65 @@
+name: Java Maven Build
+
+on:
+  push:
+    branches:
+      - github-action
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        ref: github-action
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'adopt'
+        java-version: '11'
+
+    - name: Build with Maven
+      run: mvn clean install
+      
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2  # Update with your desired region
+
+    - name: Fetch Ubuntu AMI ID
+      id: fetch-ami
+      run: |
+        ami_id=$(aws ec2 describe-images \
+          --owners 099720109477 \
+          --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*" \
+          --query 'Images|sort_by(@, &CreationDate)|[-1].ImageId' \
+          --output text)
+        echo "AMI ID: $ami_id"
+        echo "::set-output name=ami_id::$ami_id"
+
+    - name: Create EC2 Instance
+      run: |
+        instance_id=$(aws ec2 run-instances --image-id ${{ needs.fetch-ami.outputs.ami_id }} --instance-type t2.micro --key-name YourKeyPairName --query 'Instances[0].InstanceId' --output text)
+        echo "Instance ID: $instance_id"
+        aws ec2 wait instance-running --instance-ids $instance_id
+        instance_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+        echo "Instance IP: $instance_ip"
+        echo "::set-output name=instance_ip::$instance_ip"
+
+    - name: SSH into EC2 Instance and Run Commands
+      run: |
+        ssh -o StrictHostKeyChecking=no -i YourKeyPair.pem ubuntu@${{ needs.create_instance.outputs.instance_ip }} << 'EOF'
+        sudo apt update -y
+        sudo apt install -y git
+        git clone https://github.com/chandradeoarya/devops-cicd-gaction-java-spring.git
+        sudo apt install -y maven
+        cd devops-cicd-gaction-java-spring/
+        mvn clean install
+        mvn spring-boot:run
+        EOF
+
