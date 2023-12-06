@@ -31,20 +31,9 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2  # Update with your desired region
 
-    - name: Fetch Ubuntu AMI ID
-      id: fetch-ami
-      run: |
-        ami_id=$(aws ec2 describe-images \
-          --owners 099720109477 \
-          --filters "Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*" \
-          --query 'Images|sort_by(@, &CreationDate)|[-1].ImageId' \
-          --output text)
-        echo "AMI ID: $ami_id"
-        echo "::set-output name=ami_id::$ami_id"
-
     - name: Create EC2 Instance
       run: |
-        instance_id=$(aws ec2 run-instances --image-id ${{ needs.fetch-ami.outputs.ami_id }} --instance-type t2.micro --key-name YourKeyPairName --query 'Instances[0].InstanceId' --output text)
+        instance_id=$(aws ec2 run-instances --image-id ami-0e83be366243f524a --instance-type t2.micro --key-name YourKeyPairName --query 'Instances[0].InstanceId' --output text)
         echo "Instance ID: $instance_id"
         aws ec2 wait instance-running --instance-ids $instance_id
         instance_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
