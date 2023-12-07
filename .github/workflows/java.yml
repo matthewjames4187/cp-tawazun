@@ -31,16 +31,12 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2
 
-    - name: Read IP from File
-      id: read_ip
-      run: echo "INSTANCE_IP=$(cat /home/coderbob/Desktop/cp-tawazun/external_ip.txt)" >> $GITHUB_ENV
-
     - name: Create PEM file
       run: echo -e "${{ secrets.AWS_PEM_KEY_AS_PEM }}" > cpdevopsew-us-east-2.pem
 
     - name: SSH into EC2 Instance and Run Commands
       run: |
-        ssh -o StrictHostKeyChecking=no -i cpdevopsew-us-east-2.pem ubuntu@${{ env.INSTANCE_IP }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no -i cpdevopsew-us-east-2.pem ubuntu@${{ env.EXTERNAL_IP }} << 'EOF'
         sudo apt update -y
         sudo apt install -y git
         git clone https://github.com/chandradeoarya/devops-cicd-gaction-java-spring.git
