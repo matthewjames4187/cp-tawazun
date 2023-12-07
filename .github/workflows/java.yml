@@ -31,44 +31,16 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2
 
-  create_instance:
-    needs: build
-    runs-on: ubuntu-latest
-    outputs:
-      id: create_instance_outputs
-      values: ${{ steps.set_output.outputs }}
-    
-    steps:
-    - name: Set Output
-      id: set_output
-      run: |
-        instance_id=$(aws ec2 run-instances --image-id ami-0e83be366243f524a --instance-type t2.micro --key-name cpdevopsew-us-east-2 --query 'Instances[0].InstanceId' --output text)
-        echo "Instance ID: $instance_id"
-        aws ec2 wait instance-running --instance-ids $instance_id
-        instance_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-        echo "Instance IP: $instance_ip"
-        echo "INSTANCE_IP=$instance_ip" >> $GITHUB_ENV
+    - name: Read IP from File
+      id: read_ip
+      run: echo "INSTANCE_IP=$(cat /home/coderbob/Desktop/cp-tawazun/external_ip.txt)" >> $GITHUB_ENV
 
-  use_instance:
-    needs: create_instance
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Use Instance IP
-      run: |
-        echo "Instance IP: ${{ needs.create_instance_outputs.instance_ip }}"
-
-  ssh_into_instance:
-    needs: create_instance
-    runs-on: ubuntu-latest
-
-    steps:
     - name: Create PEM file
       run: echo -e "${{ secrets.AWS_PEM_KEY_AS_PEM }}" > cpdevopsew-us-east-2.pem
 
     - name: SSH into EC2 Instance and Run Commands
       run: |
-        ssh -o StrictHostKeyChecking=no -i cpdevopsew-us-east-2.pem ubuntu@${{ needs.create_instance.outputs.instance_ip }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no -i cpdevopsew-us-east-2.pem ubuntu@${{ env.INSTANCE_IP }} << 'EOF'
         sudo apt update -y
         sudo apt install -y git
         git clone https://github.com/chandradeoarya/devops-cicd-gaction-java-spring.git
