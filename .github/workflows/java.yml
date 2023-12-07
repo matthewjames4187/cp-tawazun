@@ -23,26 +23,24 @@ jobs:
 
     - name: Build with Maven
       run: mvn clean install
-      
+
     - name: Set up AWS CLI
       uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-2  # Update with your desired region
+        aws-region: us-east-2
 
-    - name: Create EC2 Instance
-      run: |
-        instance_id=$(aws ec2 run-instances --image-id ami-0e83be366243f524a --instance-type t2.micro --key-name YourKeyPairName --query 'Instances[0].InstanceId' --output text)
-        echo "Instance ID: $instance_id"
-        aws ec2 wait instance-running --instance-ids $instance_id
-        instance_ip=$(aws ec2 describe-instances --instance-ids $instance_id --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-        echo "Instance IP: $instance_ip"
-        echo "::set-output name=instance_ip::$instance_ip"
+    - name: Read IP from File
+      id: read_ip
+      run: echo "INSTANCE_IP=$(cat /home/coderbob/Desktop/cp-tawazun/external_ip.txt)" >> $GITHUB_ENV
+
+    - name: Create PEM file
+      run: echo -e "${{ secrets.AWS_PEM_KEY_AS_PEM }}" > cpdevopsew-us-east-2.pem
 
     - name: SSH into EC2 Instance and Run Commands
       run: |
-        ssh -o StrictHostKeyChecking=no -i YourKeyPair.pem ubuntu@${{ needs.create_instance.outputs.instance_ip }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no -i cpdevopsew-us-east-2.pem ubuntu@${{ env.INSTANCE_IP }} << 'EOF'
         sudo apt update -y
         sudo apt install -y git
         git clone https://github.com/chandradeoarya/devops-cicd-gaction-java-spring.git
@@ -51,4 +49,3 @@ jobs:
         mvn clean install
         mvn spring-boot:run
         EOF
-
