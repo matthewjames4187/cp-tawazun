@@ -34,6 +34,9 @@ jobs:
     - name: Create PEM file
       run: echo -e "${{ secrets.AWS_PEM_KEY_AS_PEM }}" > cpdevopsew-us-east-2.pem
 
+    - name: Set correct permissions on private key
+      run: chmod 400 cpdevopsew-us-east-2.pem
+
     - name: SSH into EC2 Instance and Run Commands
       run: |
         ssh -o StrictHostKeyChecking=no -i cpdevopsew-us-east-2.pem ubuntu@${{ secrets.EXTERNAL_IP }} << 'EOF'
